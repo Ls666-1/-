@@ -388,7 +388,14 @@
   .rep-sum .rs span{font-size:12px;color:var(--ink-2)}
   .rep-sum .rs.bad b{color:var(--danger)}
   .rep-md{width:100%;min-height:330px;margin-top:6px;border:1px solid var(--border);border-radius:12px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical}
+  /* 钉钉工作台 H5 微应用适配：避开钉钉原生导航栏与底部工具栏 */
+  html.in-dingtalk .topbar{padding-top:calc(12px + env(safe-area-inset-top))}
+  html.in-dingtalk .content{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+  html.in-dingtalk .mobile-tab{bottom:calc(54px + env(safe-area-inset-bottom))}
+  html.in-dingtalk .fab{bottom:calc(138px + env(safe-area-inset-bottom));width:48px;height:48px}
+  html.in-dingtalk .toasts{bottom:calc(138px + env(safe-area-inset-bottom))}
 </style>
+<script>if(/DingTalk/i.test(navigator.userAgent||""))document.documentElement.classList.add("in-dingtalk");</script>
 </head>
 <body>
 <div class="app">

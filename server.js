@@ -202,6 +202,12 @@ function serveStatic(req, res) {
   if (!filePath.startsWith(PUBLIC_DIR)) { res.writeHead(403); res.end("Forbidden"); return; }
   fs.readFile(filePath, (err, buf) => {
     if (err) {
+      // 钉钉域名归属校验：环境变量 DINGTALK_VERIFY 直接返回校验文本（拿到钉钉下发的校验内容后填 Railway 变量即可，免重新部署）
+      if (/\.txt$/i.test(urlPath) && process.env.DINGTALK_VERIFY) {
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end(String(process.env.DINGTALK_VERIFY));
+        return;
+      }
       // SPA 回退
       fs.readFile(path.join(PUBLIC_DIR, "index.html"), (e2, b2) => {
         if (e2) { res.writeHead(404); res.end("Not found"); }
