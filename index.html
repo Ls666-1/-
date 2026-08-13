@@ -285,9 +285,10 @@
     .field select,.field input{height:44px;font-size:15px}
     .note-area{min-height:80px;font-size:15px}
     .cmt-form input{height:44px}
-    /* FAB 与提示：抬到底部 Tab 之上 */
-    .fab{right:16px;bottom:calc(72px + env(safe-area-inset-bottom))}
-    .toasts{right:12px;left:12px;max-width:none;bottom:calc(72px + env(safe-area-inset-bottom))}
+    /* FAB 与提示：抬到底部 Tab 之上，避免遮挡 Tab 文字/图标 */
+    .fab{right:18px;bottom:calc(90px + env(safe-area-inset-bottom));width:48px;height:48px}
+    .fab svg{width:22px;height:22px}
+    .toasts{right:12px;left:12px;max-width:none;bottom:calc(90px + env(safe-area-inset-bottom))}
     /* 甘特：缩小最小宽度，少滚动 */
     .g-grid{min-width:340px}
     .g-row{grid-template-columns:116px 1fr}
