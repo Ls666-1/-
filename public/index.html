@@ -181,19 +181,6 @@
   html[data-theme="dark"] .scrim{background:rgba(0,0,0,.55)}
   .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);z-index:61;box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .28s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column}
   .drawer.show{transform:none}
-  /* 分享弹层 */
-  .share-mask{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px}
-  .share-mask[hidden]{display:none}
-  .share-card{width:min(440px,100%);background:var(--surface);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden;animation:rise .22s ease both}
-  .share-card .sh-h{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line)}
-  .share-card .sh-h h3{margin:0;font-size:16px;font-weight:700}
-  .share-card .sh-b{padding:18px}
-  .share-url{display:flex;gap:8px;margin:10px 0}
-  .share-url input{flex:1;min-width:0;font-size:15px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);min-height:44px}
-  .share-tip{font-size:13px;color:var(--accent);margin-top:6px;min-height:18px;font-weight:600}
-  .share-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .share-row .btn{flex:1;justify-content:center;min-height:44px}
-  .share-note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.7}
   .dh{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
   .dh .dt{flex:1;min-width:0}
   .dh h3{font-size:16px;font-weight:700;line-height:1.4;word-break:break-word}
@@ -466,7 +453,6 @@
         <button class="btn ghost" id="btnExport" title="导出备份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="btn ghost" id="btnImport" title="导入恢复"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
         <button class="btn ghost" id="btnClear" title="清空数据"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-        <button class="icon-btn" id="btnShare" title="分享应用给同事"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
         <input type="file" id="fileInput" accept="application/json" class="hidden">
       </div>
     </header>
@@ -1233,40 +1219,6 @@ function rangeForReport(sel,cs,ce){
   if(sel==="custom") return [cs||fmtDate(today), ce||fmtDate(today)];
   const s=weekStartOf(today); return [fmtDate(s), fmtDate(today)];
 }
-function shareUrl(){
-  const c=localStorage.getItem('wb_team_shareurl');
-  return (c&&c.trim())?c.trim():location.href;
-}
-function isLocalMode(){
-  return ['localhost','127.0.0.1'].includes(location.hostname)||location.protocol==='file:';
-}
-function openShare(){
-  const local=isLocalMode()&&!localStorage.getItem('wb_team_shareurl');
-  $('#shareUrl').value=local?'（本地模式：请先设置公网地址或部署到公网）':shareUrl();
-  $('#shareTip').textContent=local?'⚠️ 当前为本地 / 未部署模式，发出的链接别人打不开':'';
-  $('#shareCustom').value=localStorage.getItem('wb_team_shareurl')||'';
-  $('#shareMask').hidden=false;
-}
-function closeShare(){ $('#shareMask').hidden=true; }
-function copyShare(){
-  if(isLocalMode()&&!localStorage.getItem('wb_team_shareurl')){ toast('无法分享','当前为本地模式，请先部署到公网或手动设置地址','warn'); return; }
-  const url=shareUrl();
-  const ok=()=>{ $('#shareTip').textContent='✅ 链接已复制，去钉钉 / 微信粘贴发给同事即可'; toast('已复制','分享链接已复制到剪贴板',''); };
-  try{ navigator.clipboard.writeText(url).then(ok,()=>fallbackCopy(url,ok)); }catch(_){ fallbackCopy(url,ok); }
-}
-function nativeShare(){
-  if(isLocalMode()&&!localStorage.getItem('wb_team_shareurl')){ toast('无法分享','当前为本地模式','warn'); return; }
-  const url=shareUrl();
-  if(navigator.share){ navigator.share({title:document.title||'运营工作台',text:'我们的团队运营工作台',url}).then(()=>{},()=>{}); }
-  else { copyShare(); toast('已复制','当前环境不支持原生分享，已改为复制链接',''); }
-}
-function saveShareUrl(){
-  const v=$('#shareCustom').value.trim();
-  if(v){ localStorage.setItem('wb_team_shareurl',v); toast('已保存','以后分享将使用此地址',''); }
-  else { localStorage.removeItem('wb_team_shareurl'); toast('已清除','恢复使用当前打开地址',''); }
-  openShare();
-}
-
 function fallbackCopy(text,cb){ const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); cb&&cb(); }catch(e){} document.body.removeChild(ta); }
 function genReportMarkdown(o){
   const {start,end,done,ip,todo,overdue,tasks}=o; const L=[];
@@ -1419,12 +1371,6 @@ $("#memberForm").onsubmit=e=>{e.preventDefault();const id=$("#mId").value;const 
 $("#btnNew").onclick=()=>{setTab("board");setTimeout(()=>$("#tTitle").focus(),250);};
 $("#fab").onclick=()=>{setTab("board");setTimeout(()=>$("#tTitle").focus(),250);};
 $("#btnExport").onclick=()=>Store.exportData();
-$('#btnShare').onclick=openShare;
-$('#shareClose').onclick=closeShare;
-$('#shareMask').onclick=e=>{ if(e.target===$('#shareMask')) closeShare(); };
-$('#shareCopy').onclick=copyShare;
-$('#shareNative').onclick=nativeShare;
-$('#shareSave').onclick=saveShareUrl;
 $("#btnImport").onclick=()=>$("#fileInput").click();
 $("#fileInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!confirm("导入将覆盖当前数据，确定继续？")){e.target.value="";return;}Store.importData(d).then(()=>{toast("导入成功","数据已恢复","");}).catch(err=>toast("导入失败",err.message,"danger"));}catch(_){toast("文件解析失败","请确认是有效的备份 JSON","");}e.target.value="";};r.readAsText(f);};
 $("#btnClear").onclick=()=>{if(confirm("将清空全部任务与成员数据（多人模式下会同步给所有协作者），确定？"))Store.clearAll();};
@@ -1499,60 +1445,6 @@ Store.init().then(()=>{
   setInterval(checkReminders,20000);
   setInterval(()=>{ if(curTab==="board")renderBoard(); },60000); // 时间进度条每分钟刷新
 });
-</script>
-<div class="share-mask" id="shareMask" hidden>
-  <div class="share-card" role="dialog" aria-modal="true">
-    <div class="sh-h">
-      <h3>分享应用给同事</h3>
-      <button class="icon-btn" id="shareClose" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-    <div class="sh-b">
-      <div style="font-size:13px;color:var(--muted)">当前分享链接（任何人打开即用）</div>
-      <div class="share-url">
-        <input id="shareUrl" type="text" readonly>
-      </div>
-      <div class="share-tip" id="shareTip"></div>
-      <div style="font-size:13px;color:var(--muted);margin-top:6px">链接不对？手动指定你的公网地址（仅本机保存）</div>
-      <div class="share-url">
-        <input id="shareCustom" type="url" inputmode="url" placeholder="https://你的公网地址">
-        <button class="btn ghost" id="shareSave">保存</button>
-      </div>
-      <div class="share-row">
-        <button class="btn primary" id="shareCopy">复制链接</button>
-        <button class="btn ghost" id="shareNative">调起分享</button>
-      </div>
-      <div class="share-note">说明：此链接即你的工作台公网地址，发给同事后对方打开即用（自动适配钉钉 / 手机），无需走钉钉审核或体验组织配置。本地模式（localhost / 文件）下链接他人无法访问，请先部署到公网。</div>
-    </div>
-  </div>
-</div>
-<!-- ===== 独立容错脚本：即使主脚本异常，时钟与分享面板仍可工作（不依赖上方任何函数） ===== -->
-<script>
-(function(){
-  function $(s){return document.querySelector(s);}
-  function isLocal(){return location.protocol==="file:"||["localhost","127.0.0.1"].indexOf(location.hostname)>=0;}
-  function getShareUrl(){var c=localStorage.getItem("wb_team_shareurl");if(c&&c.trim())return c.trim();return location.href;}
-  function toast(t,m){var box=$("#toasts");if(!box){box=document.querySelector(".toasts");}if(!box)return;var el=document.createElement("div");el.className="toast";el.innerHTML='<div class="tc"><div class="ttl">'+t+'</div><div class="tmsg">'+(m||"")+'</div></div>';box.appendChild(el);setTimeout(function(){el.remove();},4200);}
-  function fb(s){var ta=document.createElement("textarea");ta.value=s;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("已复制","分享链接已复制");}catch(_){toast("复制失败","请手动长按复制");}ta.remove();}
-  function copyText(txt){try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast("已复制","分享链接已复制");},function(){fb(txt);});return;}fb(txt);}catch(e){fb(txt);}}
-  function openShare(){
-    var m=$("#shareMask");if(!m)return;
-    var local=isLocal()&&!localStorage.getItem("wb_team_shareurl");
-    var u=$("#shareUrl");if(u)u.value=local?"（本地模式，请先部署公网）":getShareUrl();
-    var t=$("#shareTip");if(t)t.textContent=local?"⚠️ 当前为本地 / 未部署模式，链接他人无法访问，请先部署到公网。":"";
-    var cu=$("#shareCustom");if(cu)cu.value=localStorage.getItem("wb_team_shareurl")||"";
-    m.hidden=false;
-  }
-  function closeShare(){var m=$("#shareMask");if(m)m.hidden=true;}
-  var btn=$("#btnShare");if(btn)btn.onclick=openShare;
-  var cb=$("#shareClose");if(cb)cb.onclick=closeShare;
-  var mask=$("#shareMask");if(mask)mask.addEventListener("click",function(e){if(e.target===mask)closeShare();});
-  var sc=$("#shareCopy");if(sc)sc.onclick=function(){if(isLocal()&&!localStorage.getItem("wb_team_shareurl")){toast("无法分享","请先部署到公网");return;}copyText(getShareUrl());};
-  var sn=$("#shareNative");if(sn)sn.onclick=function(){if(isLocal()&&!localStorage.getItem("wb_team_shareurl")){toast("无法分享","请先部署到公网");return;}var url=getShareUrl();if(navigator.share){navigator.share({title:document.title,url:url}).then(function(){},function(){});}else{copyText(url);toast("已复制","已复制链接");}};
-  var ss=$("#shareSave");if(ss)ss.onclick=function(){var v=$("#shareCustom");if(!v)return;var val=v.value.trim();if(val){localStorage.setItem("wb_team_shareurl",val);toast("已保存","自定义分享地址已保存");}else{localStorage.removeItem("wb_team_shareurl");toast("已清除","已清除自定义地址");}openShare();};
-  function tick(){var c=$("#liveClock");if(c){var d=new Date();var p=function(n){return(n<10?"0":"")+n;};c.textContent=p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());}}
-  tick();setInterval(tick,1000);
-  window.addEventListener("error",function(e){console.warn("[standalone-guard]",e&&e.message);});
-})();
 </script>
 </body>
 </html>
