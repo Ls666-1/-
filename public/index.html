@@ -1525,5 +1525,34 @@ Store.init().then(()=>{
     </div>
   </div>
 </div>
+<!-- ===== 独立容错脚本：即使主脚本异常，时钟与分享面板仍可工作（不依赖上方任何函数） ===== -->
+<script>
+(function(){
+  function $(s){return document.querySelector(s);}
+  function isLocal(){return location.protocol==="file:"||["localhost","127.0.0.1"].indexOf(location.hostname)>=0;}
+  function getShareUrl(){var c=localStorage.getItem("wb_team_shareurl");if(c&&c.trim())return c.trim();return location.href;}
+  function toast(t,m){var box=$("#toasts");if(!box){box=document.querySelector(".toasts");}if(!box)return;var el=document.createElement("div");el.className="toast";el.innerHTML='<div class="tc"><div class="ttl">'+t+'</div><div class="tmsg">'+(m||"")+'</div></div>';box.appendChild(el);setTimeout(function(){el.remove();},4200);}
+  function fb(s){var ta=document.createElement("textarea");ta.value=s;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("已复制","分享链接已复制");}catch(_){toast("复制失败","请手动长按复制");}ta.remove();}
+  function copyText(txt){try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast("已复制","分享链接已复制");},function(){fb(txt);});return;}fb(txt);}catch(e){fb(txt);}}
+  function openShare(){
+    var m=$("#shareMask");if(!m)return;
+    var local=isLocal()&&!localStorage.getItem("wb_team_shareurl");
+    var u=$("#shareUrl");if(u)u.value=local?"（本地模式，请先部署公网）":getShareUrl();
+    var t=$("#shareTip");if(t)t.textContent=local?"⚠️ 当前为本地 / 未部署模式，链接他人无法访问，请先部署到公网。":"";
+    var cu=$("#shareCustom");if(cu)cu.value=localStorage.getItem("wb_team_shareurl")||"";
+    m.hidden=false;
+  }
+  function closeShare(){var m=$("#shareMask");if(m)m.hidden=true;}
+  var btn=$("#btnShare");if(btn)btn.onclick=openShare;
+  var cb=$("#shareClose");if(cb)cb.onclick=closeShare;
+  var mask=$("#shareMask");if(mask)mask.addEventListener("click",function(e){if(e.target===mask)closeShare();});
+  var sc=$("#shareCopy");if(sc)sc.onclick=function(){if(isLocal()&&!localStorage.getItem("wb_team_shareurl")){toast("无法分享","请先部署到公网");return;}copyText(getShareUrl());};
+  var sn=$("#shareNative");if(sn)sn.onclick=function(){if(isLocal()&&!localStorage.getItem("wb_team_shareurl")){toast("无法分享","请先部署到公网");return;}var url=getShareUrl();if(navigator.share){navigator.share({title:document.title,url:url}).then(function(){},function(){});}else{copyText(url);toast("已复制","已复制链接");}};
+  var ss=$("#shareSave");if(ss)ss.onclick=function(){var v=$("#shareCustom");if(!v)return;var val=v.value.trim();if(val){localStorage.setItem("wb_team_shareurl",val);toast("已保存","自定义分享地址已保存");}else{localStorage.removeItem("wb_team_shareurl");toast("已清除","已清除自定义地址");}openShare();};
+  function tick(){var c=$("#liveClock");if(c){var d=new Date();var p=function(n){return(n<10?"0":"")+n;};c.textContent=p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());}}
+  tick();setInterval(tick,1000);
+  window.addEventListener("error",function(e){console.warn("[standalone-guard]",e&&e.message);});
+})();
+</script>
 </body>
 </html>
