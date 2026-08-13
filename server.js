@@ -95,20 +95,24 @@ function seed() {
   const t = new Date();
   const y = new Date(t); y.setDate(y.getDate() - 1);
   const tm = new Date(t); tm.setDate(t.getDate() + 2);
+  const s1 = new Date(t); s1.setDate(t.getDate() - 4);
+  const s2 = new Date(t); s2.setDate(t.getDate() - 3);
+  const s3 = new Date(t); s3.setDate(t.getDate());
+  const s4 = new Date(t); s4.setDate(t.getDate() - 1);
   const base = (o) => ({ comments: [], reminder: { enabled: false, at: null, channels: { inapp: true, browser: false, dingtalk: false }, notified: false }, note: "", ...o });
   return {
     updatedAt: Date.now(),
     history: [],
     tasks: [
-      base({ id: uid(), title: "整理 Q3 产品需求文档", owner: "张三", priority: "P0", due: fmtDate(y), status: "待办" }),
-      base({ id: uid(), title: "首页改版视觉稿评审", owner: "李四", priority: "P1", due: fmtDate(t), status: "进行中" }),
-      base({ id: uid(), title: "接口联调与提测", owner: "王五", priority: "P1", due: fmtDate(tm), status: "待办" }),
-      base({ id: uid(), title: "本周站会纪要同步", owner: "张三", priority: "P2", due: fmtDate(t), status: "待办" }),
+      base({ id: uid(), title: "整理 Q3 产品需求文档", owner: "张三", priority: "P0", start: fmtDate(s1), due: fmtDate(y), status: "待办" }),
+      base({ id: uid(), title: "首页改版视觉稿评审", owner: "李四", priority: "P1", start: fmtDate(s2), due: fmtDate(t), status: "进行中" }),
+      base({ id: uid(), title: "接口联调与提测", owner: "王五", priority: "P1", start: fmtDate(s3), due: fmtDate(tm), status: "待办" }),
+      base({ id: uid(), title: "本周站会纪要同步", owner: "张三", priority: "P2", start: fmtDate(s4), due: fmtDate(t), status: "待办" }),
     ],
     members: [
-      { id: uid(), name: "张三", role: "产品经理" },
-      { id: uid(), name: "李四", role: "前端开发" },
-      { id: uid(), name: "王五", role: "测试工程师" },
+      { id: uid(), name: "张三", role: "产品经理", perm: "admin" },
+      { id: uid(), name: "李四", role: "前端开发", perm: "edit" },
+      { id: uid(), name: "王五", role: "测试工程师", perm: "edit" },
     ],
   };
 }
@@ -117,6 +121,15 @@ function loadState() {
     if (fs.existsSync(STATE_FILE)) {
       const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
       state = { tasks: raw.tasks || [], members: raw.members || [], history: raw.history || [], updatedAt: raw.updatedAt || Date.now() };
+      // 兼容旧数据：为缺少 start 的任务回填（截止日往前 3 天），保证甘特视图有合理周期
+      let changed = false;
+      state.tasks.forEach((tk) => {
+        if (!tk.start && tk.due) {
+          const d = new Date(tk.due + "T00:00:00");
+          if (!isNaN(d.getTime())) { d.setDate(d.getDate() - 3); tk.start = fmtDate(d); changed = true; }
+        }
+      });
+      if (changed) saveState();
       return;
     }
   } catch (e) { /* fallthrough to seed */ }
@@ -277,7 +290,7 @@ const server = http.createServer(async (req, res) => {
       const t = {
         id: uid(), title: String(b.title).slice(0, 200), owner: String(b.owner).slice(0, 60),
         priority: ["P0", "P1", "P2"].includes(b.priority) ? b.priority : "P1",
-        due: b.due || fmtDate(new Date()), status: ["待办", "进行中", "已完成"].includes(b.status) ? b.status : "待办",
+        due: b.due || fmtDate(new Date()), start: b.start ? String(b.start).slice(0, 30) : "", status: ["待办", "进行中", "已完成"].includes(b.status) ? b.status : "待办",
         note: String(b.note || "").slice(0, 500),
         comments: Array.isArray(b.comments) ? b.comments.slice(0, 200) : [],
         reminder: b.reminder ? sanitizeReminder(b.reminder) : { enabled: false, at: null, channels: { inapp: true, browser: false, dingtalk: false }, notified: false },
@@ -301,6 +314,7 @@ const server = http.createServer(async (req, res) => {
         if (b.owner !== undefined) t.owner = String(b.owner).slice(0, 60);
         if (b.priority !== undefined && ["P0", "P1", "P2"].includes(b.priority)) t.priority = b.priority;
         if (b.due !== undefined) t.due = b.due;
+        if (b.start !== undefined) t.start = b.start ? String(b.start).slice(0, 30) : "";
         if (b.status !== undefined && ["待办", "进行中", "已完成"].includes(b.status)) {
           const becameDone = b.status === "已完成" && t.status !== "已完成";
           t.status = b.status;
@@ -398,20 +412,35 @@ const server = http.createServer(async (req, res) => {
     try {
       const b = await readBody(req);
       if (!b.name) return sendJSON(res, 400, { ok: false, error: "姓名必填" });
-      const mem = { id: uid(), name: String(b.name).slice(0, 60), role: String(b.role || "").slice(0, 60) };
+      const mem = { id: uid(), name: String(b.name).slice(0, 60), role: String(b.role || "").slice(0, 60), perm: ["admin", "edit", "view"].includes(b.perm) ? b.perm : "edit" };
       state.members.push(mem); saveState(); broadcast();
       return sendJSON(res, 201, { ok: true, member: mem });
     } catch (e) { return sendJSON(res, 400, { ok: false, error: "请求体解析失败" }); }
   }
   m = p.match(/^\/api\/member\/([\w-]+)$/);
-  if (m && method === "DELETE") {
-    if (!hasWriteAuth(req)) return sendJSON(res, 401, { ok: false, error: "需要团队密钥" });
+  if (m) {
     const id = m[1];
-    const before = state.members.length;
-    state.members = state.members.filter((x) => x.id !== id);
-    if (state.members.length === before) return sendJSON(res, 404, { ok: false, error: "成员不存在" });
-    saveState(); broadcast();
-    return sendJSON(res, 200, { ok: true });
+    if (method === "DELETE") {
+      if (!hasWriteAuth(req)) return sendJSON(res, 401, { ok: false, error: "需要团队密钥" });
+      const before = state.members.length;
+      state.members = state.members.filter((x) => x.id !== id);
+      if (state.members.length === before) return sendJSON(res, 404, { ok: false, error: "成员不存在" });
+      saveState(); broadcast();
+      return sendJSON(res, 200, { ok: true });
+    }
+    if (method === "PUT") {
+      if (!hasWriteAuth(req)) return sendJSON(res, 401, { ok: false, error: "需要团队密钥" });
+      try {
+        const b = await readBody(req);
+        const mem = state.members.find((x) => x.id === id);
+        if (!mem) return sendJSON(res, 404, { ok: false, error: "成员不存在" });
+        if (b.name !== undefined) mem.name = String(b.name).slice(0, 60);
+        if (b.role !== undefined) mem.role = String(b.role || "").slice(0, 60);
+        if (b.perm !== undefined && ["admin", "edit", "view"].includes(b.perm)) mem.perm = b.perm;
+        saveState(); broadcast();
+        return sendJSON(res, 200, { ok: true, member: mem });
+      } catch (e) { return sendJSON(res, 400, { ok: false, error: "请求体解析失败" }); }
+    }
   }
 
   // 静态资源
