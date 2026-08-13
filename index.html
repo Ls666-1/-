@@ -250,6 +250,8 @@
   .fab svg{width:26px;height:26px}
 
   .mobile-tab{display:none}
+.mt-share{color:var(--accent-ink);font-weight:600}
+.mt-share svg{color:var(--accent)}
   @media(max-width:860px){
     .sidebar{display:none}
     .content{padding:14px;padding-bottom:96px}
@@ -607,6 +609,10 @@
   <button data-tab="members"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>成员</button>
   <button data-tab="history"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>历史<span class="mt-badge" id="mtHistory"></span></button>
   <button data-tab="report"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>周报</button>
+  <button id="btnShareMobile" class="mt-share" title="分享应用给同事">
+<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+</svg>分享</button>
 </nav>
 
 <button class="fab" id="fab" title="新建任务"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -1544,6 +1550,7 @@ Store.init().then(()=>{
   }
   function closeShare(){var m=$("#shareMask");if(m)m.hidden=true;}
   var btn=$("#btnShare");if(btn)btn.onclick=openShare;
+  var sbm=$("#btnShareMobile");if(sbm)sbm.onclick=openShare;
   var cb=$("#shareClose");if(cb)cb.onclick=closeShare;
   var mask=$("#shareMask");if(mask)mask.addEventListener("click",function(e){if(e.target===mask)closeShare();});
   var sc=$("#shareCopy");if(sc)sc.onclick=function(){if(isLocal()&&!localStorage.getItem("wb_team_shareurl")){toast("无法分享","请先部署到公网");return;}copyText(getShareUrl());};
